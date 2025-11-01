@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: '/30DayMapChallenge2025/'
   },
+  css: ['~/assets/css/default.css'],
   modules: [
     '@nuxt/content',
     '@nuxt/eslint',
