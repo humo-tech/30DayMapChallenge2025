@@ -1,6 +1,9 @@
 <script setup>
 const route = useRoute()
 const { data } = await useAsyncData(() => queryCollection('content').path(route.path).first())
+definePageMeta({
+  layout: 'maps',
+})
 useSeoMeta({
   title: data.value?.title,
   description: data.value?.description
