@@ -11,7 +11,7 @@ const geometry = new THREE.SphereGeometry(1, 32, 32)
 const textureLoader = new THREE.TextureLoader()
 const material = new THREE.MeshPhongMaterial({
     map: textureLoader.load('/images/maps/day01/GRAY_50M_SR_OB.jpg'),
-    specular: new THREE.Color('grey')
+    specular: new THREE.Color('#002')
 })
 
 const group = new THREE.Group()
@@ -20,13 +20,30 @@ scene.add(group)
 const earth = new THREE.Mesh(geometry, material)
 group.add(earth)
 
-const tokyo = new THREE.Mesh(
-    new THREE.SphereGeometry(0.005, 16, 16),
-    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+const tokyoLatLon = [35.6895, 139.6917]
+const losAngelesLatLon = [33.9502, -118.3548]
+
+const lineArcPositions = getLineArcPositionFromLatLon(
+    ...tokyoLatLon, 
+    ...losAngelesLatLon,
+    64
 )
-const pos = getPositionFromLatLon(35.6895, 139.6917, 1)
-tokyo.position.set(...pos)
-group.add(tokyo)
+const linePoints = lineArcPositions.map(pos => new THREE.Vector3(...pos))
+const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints)
+const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffaa00 })
+const line = new THREE.Line(lineGeometry, lineMaterial)
+group.add(line)
+
+const greatCirclePoints = getGreatCircleFromLatLon(
+    ...tokyoLatLon,
+    ...losAngelesLatLon,
+    64
+)
+const greatPoints = greatCirclePoints.map(pos => new THREE.Vector3(...pos))
+const greatGeometry = new THREE.BufferGeometry().setFromPoints(greatPoints)
+const greatMaterial = new THREE.LineBasicMaterial({ color: 0x00aaff })
+const greatCircle = new THREE.Line(greatGeometry, greatMaterial)
+group.add(greatCircle)
 
 const ambientLight = new THREE.AmbientLight(0x666677, 2)
 scene.add(ambientLight)
@@ -59,14 +76,16 @@ scene.add(atmosphere);
 
 const animate = function () {
     requestAnimationFrame(animate)
-    group.rotation.y += 0.003
+    group.rotation.y -= 0.003
     renderer.render(scene, camera)
 }
 
 onMounted(() => {
     mapContainer.value.appendChild(renderer.domElement)
     renderer.setSize(window.innerWidth, window.innerHeight)
-    camera.position.z = 3
+    camera.position.z = 2
+    camera.position.y = 2
+    camera.lookAt(new THREE.Vector3(0, 0, 0))
 
     animate()
 
