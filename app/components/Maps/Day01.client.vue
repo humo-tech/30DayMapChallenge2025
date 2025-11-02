@@ -21,17 +21,11 @@ const earth = new THREE.Mesh(geometry, material)
 group.add(earth)
 
 const tokyo = new THREE.Mesh(
-    new THREE.SphereGeometry(0.015, 16, 16),
+    new THREE.SphereGeometry(0.005, 16, 16),
     new THREE.MeshBasicMaterial({ color: 0xff0000 })
 )
-const lat = 35.6895 * (Math.PI / 180)
-const lon = (139.6917+80) * (Math.PI / 180) // shifted 80 degrees for better view(why?)
-const radius = 1
-tokyo.position.set(
-    radius * Math.cos(lat) * Math.cos(lon),
-    radius * Math.sin(lat),
-    radius * Math.cos(lat) * Math.sin(lon)
-)
+const pos = getPositionFromLatLon(35.6895, 139.6917, 1)
+tokyo.position.set(...pos)
 group.add(tokyo)
 
 const ambientLight = new THREE.AmbientLight(0x666677, 2)
