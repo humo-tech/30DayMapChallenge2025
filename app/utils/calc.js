@@ -48,3 +48,32 @@ export const getGreatCircleFromLatLon = (lat1, lon1, lat2, lon2, npoints = 32) =
         }))
         .flat()
 }
+
+
+// 地球の半径 (メートル)
+const R = 6378137;
+// 最大緯度 (メルカトル図法のクリップ用)
+const MAX_LATITUDE = 85.0511287798;
+
+/**
+ * 経度(lon)をWebメルカトルX座標に変換
+ */
+export function mercatorX(lon) {
+  // 経度をラジアンに変換し、半径を掛ける
+  return R * (lon * Math.PI / 180);
+}
+
+/**
+ * 緯度(lat)をWebメルカトルY座標に変換
+ */
+export function mercatorY(lat) {
+  // 緯度をクリップ
+  let latClamped = Math.max(Math.min(lat, MAX_LATITUDE), -MAX_LATITUDE);
+  
+  // 緯度をラジアンに変換
+  let latRad = latClamped * Math.PI / 180;
+  
+  // メルカトル投影の計算
+  // R * log(tan( (PI/4) + (latRad/2) ))
+  return R * Math.log(Math.tan(Math.PI / 4 + latRad / 2));
+}
