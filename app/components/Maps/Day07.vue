@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 const mapContainer = ref(null)
 const selectedCountry = ref(null);
+const showModal = ref(true);
 
 
 onMounted(() => {
@@ -32,10 +33,6 @@ onMounted(() => {
 
     mapContainer.value.addEventListener('mouseleave', (event) => {
         mouseMoving = false;
-    }, false );
-
-    mapContainer.value.addEventListener('click', (event) => {
-        if(selectedCountry.value) speach(selectedCountry.value);
     }, false );
 
     const group = new THREE.Group()
@@ -198,6 +195,8 @@ onMounted(() => {
                 }
             })
             document.body.style.cursor = 'pointer';
+            speach(selectedCountry.value);
+
         } else {
             polygonGroup.children.forEach(child => {
                 child.material.color.set(child.userData.originalColor);
@@ -212,8 +211,10 @@ onMounted(() => {
 </script>
 
 <template>
-    <h2>{{selectedCountry ? selectedCountry : 'Hover over or click a country'}}</h2>
-    <div ref="mapContainer" class="map-container">
+    <h2>{{selectedCountry ? selectedCountry : 'Hover over a country'}}</h2>
+    <div ref="mapContainer" class="map-container"></div>
+    <div class="modal" @click="showModal = false" v-if="showModal">
+            <div class="modal-message"> Click to Start</div>
     </div>
 </template>
 
@@ -234,5 +235,25 @@ h2 {
     width: 100vw;
     height: 100vh;
     background: radial-gradient(circle at center,  #1d133bff, #000000, #1d133bff, #000000);
+}
+.modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+}
+.modal-message {
+    color: white;
+    font-size: 24px;
+    font-family: sans-serif;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 20px 40px;
+    border-radius: 10px;
 }
 </style>
