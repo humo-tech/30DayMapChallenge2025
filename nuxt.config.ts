@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   app: {
-    //baseURL: '/30DayMapChallenge2025/'
+    baseURL: '/30DayMapChallenge2025/'
   },
   css: ['~/assets/css/default.css'],
   modules: [
