@@ -6,6 +6,9 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 
 
+const runtimeConfig = useRuntimeConfig()
+const baseUrl = runtimeConfig.app.baseURL || ''
+
 const mapContainer = ref(null)
 
 const bloomParams = {
@@ -71,7 +74,7 @@ onMounted(() => {
     effectComposer.addPass(bloomPass);
     effectComposer.setSize(window.innerWidth, window.innerHeight);
 
-    loadGeoJSON('/data/ne_110m_admin_0_countries.geojson').then(geojson => {
+    loadGeoJSON(`${baseUrl}/data/ne_110m_admin_0_countries.geojson`).then(geojson => {
         function createContinuousPoints(lonLatArray) {
             const points = [];
             let runningAdjustment = 0; // 経度の累積補正値
