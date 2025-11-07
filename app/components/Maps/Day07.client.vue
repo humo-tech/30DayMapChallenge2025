@@ -2,6 +2,9 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
+const runtimeConfig = useRuntimeConfig()
+const baseUrl = runtimeConfig.app.baseURL || ''
+
 const mapContainer = ref(null)
 const selectedCountry = ref(null);
 const showModal = ref(true);
@@ -64,7 +67,7 @@ onMounted(() => {
     camera.position.y = 2
     camera.lookAt(new THREE.Vector3(0, 0, 0))
 
-    loadGeoJSON('/data/ne_110m_admin_0_countries.geojson').then(geojson => {
+    loadGeoJSON(`${baseUrl}/data/ne_110m_admin_0_countries.geojson`).then(geojson => {
         function createContinuousPoints(lonLatArray) {
             const points = [];
             let runningAdjustment = 0; // 経度の累積補正値

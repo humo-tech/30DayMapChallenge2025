@@ -2,6 +2,9 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
+const runtimeConfig = useRuntimeConfig()
+const baseUrl = runtimeConfig.app.baseURL || ''
+
 const mapContainer = ref(null)
 
 const latlon2xyz = (lat, lon, radius = 1) => {
@@ -184,10 +187,10 @@ onMounted(async () => {
     camera.position.z = 12 
     camera.lookAt(new THREE.Vector3(0, 0, 0))
 
-    const swimRoute = await loadGeoJSON('/data/day04/swim.geojson')
-    const transition1Route = await loadGeoJSON('/data/day04/transition1.geojson')
-    const bikeRoute = await loadGeoJSON('/data/day04/bike.geojson')
-    const runRoute = await loadGeoJSON('/data/day04/run.geojson')
+    const swimRoute = await loadGeoJSON(`${baseUrl}/data/day04/swim.geojson`)
+    const transition1Route = await loadGeoJSON(`${baseUrl}/data/day04/transition1.geojson`)
+    const bikeRoute = await loadGeoJSON(`${baseUrl}/data/day04/bike.geojson`)
+    const runRoute = await loadGeoJSON(`${baseUrl}/data/day04/run.geojson`)
 
     drawRouteLine(swimRoute, 0x00ffff, group)
     drawRouteLine(transition1Route, 0xffff00, group)
