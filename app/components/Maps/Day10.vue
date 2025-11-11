@@ -50,12 +50,6 @@ const tiles = [
             return `https://www.jma.go.jp/bosai/jmatile/data/nowc/20251110144000/none/20251110144000/surf/hrpns/${path}.png`
         })
     },
-    { 
-        title: '11/10 23:50',
-        url: tileImages.map((path) => {
-            return `https://www.jma.go.jp/bosai/jmatile/data/nowc/20251110145000/none/20251110145000/surf/hrpns/${path}.png`
-        })
-    },
     //{ 
     //    title: '1974-1978',
     //    url: tileImages.map((path) => {
