@@ -77,3 +77,25 @@ export function mercatorY(lat) {
   // R * log(tan( (PI/4) + (latRad/2) ))
   return R * Math.log(Math.tan(Math.PI / 4 + latRad / 2));
 }
+
+export function createContinuousPoints(lonLatArray) {
+    const points = [];
+    let runningAdjustment = 0; // 経度の累積補正値
+
+    for (let i = 0; i < lonLatArray.length; i++) {
+        let lon = lonLatArray[i][0];
+        const lat = lonLatArray[i][1];
+
+        if (i > 0) {
+            const prevOriginalLon = lonLatArray[i-1][0];
+            const diff = lon - prevOriginalLon;
+
+            // 180度以上のジャンプは日付変更線をまたいだと判断
+            if (Math.abs(diff) > 180) { 
+                runningAdjustment += (diff > 0 ? -360 : 360);
+            }
+        }
+        points.push([lon + runningAdjustment, lat]);
+    }
+    return points;
+}

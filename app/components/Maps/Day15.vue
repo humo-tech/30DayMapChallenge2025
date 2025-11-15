@@ -57,40 +57,18 @@ onMounted(async () => {
     camera.position.z = 1
     camera.lookAt(new THREE.Vector3(0, 0, 0))
 
-    function createContinuousPoints(lonLatArray) {
-        const points = [];
-        let runningAdjustment = 0; // 経度の累積補正値
-
-        for (let i = 0; i < lonLatArray.length; i++) {
-            let lon = lonLatArray[i][0];
-            const lat = lonLatArray[i][1];
-
-            if (i > 0) {
-                const prevOriginalLon = lonLatArray[i-1][0];
-                const diff = lon - prevOriginalLon;
-
-                // 180度以上のジャンプは日付変更線をまたいだと判断
-                if (Math.abs(diff) > 180) { 
-                    runningAdjustment += (diff > 0 ? -360 : 360);
-                }
-            }
-            points.push(new THREE.Vector2(lon + runningAdjustment, lat));
-        }
-        return points;
-    }
-
     const geojson = await loadGeoJSON(`${baseUrl}/data/ne_10m_admin_0_japan.geojson`)
     geojson.features.forEach(feature => {
         const coordinates = feature.geometry.coordinates
         coordinates.forEach(polygon => {
             const outerRingLonLat = polygon[0]
-            const shapePoints = createContinuousPoints(outerRingLonLat);
+            const shapePoints = createContinuousPoints(outerRingLonLat).map(point => new THREE.Vector2(...point));
             const shape = new THREE.Shape(shapePoints)
 
             if (polygon.length > 1) {
                 for (let i = 1; i < polygon.length; i++) {
                     const holeLonLat = polygon[i];
-                    const holePoints = createContinuousPoints(holeLonLat);
+                    const holePoints = createContinuousPoints(holeLonLat).map(point => new THREE.Vector2(...point))
                     const holePath = new THREE.Path(holePoints);
                     shape.holes.push(holePath);
                 }
@@ -110,7 +88,7 @@ onMounted(async () => {
 
             polygonGeometry.computeVertexNormals()
 
-            const polygonMaterial = new THREE.MeshBasicMaterial({ color: 0x002244, side: THREE.FrontSide })
+            const polygonMaterial = new THREE.MeshBasicMaterial({ color: 0x061030, side: THREE.FrontSide })
             const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial)
             group.add(polygonMesh);
 
