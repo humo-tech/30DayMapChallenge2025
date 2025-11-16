@@ -29,7 +29,6 @@ const loadGeoJSON = async (url) => {
     return data
 }
 
-
 onMounted(async () => {
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.001, 100)
@@ -42,7 +41,7 @@ onMounted(async () => {
     const group = new THREE.Group()
     scene.add(group)
 
-    const ambientLight = new THREE.AmbientLight(0x666677, 2)
+    const ambientLight = new THREE.AmbientLight(0xf5f5f5, 2)
     scene.add(ambientLight)
 
     const sunLight = new THREE.DirectionalLight(0xffffff, 1)
@@ -51,8 +50,37 @@ onMounted(async () => {
 
     const animate = function () {
         requestAnimationFrame(animate)
-        renderer.render(scene, camera)
-    }
+        {
+            // horizontal motion: use stored basePosition and update X/Y (keep Z)
+            const time = clock.getElapsedTime() * 0.5;
+            const getNoiseX = (bx, by, t) => Math.sin(bx * 10 + t) * 0.02;
+            const getNoiseY = (bx, by, t) => Math.cos(by * 10 + t) * 0.02;
+
+            group.traverse((child) => {
+                const geometry = child.geometry
+                if (!geometry) return
+                const position = geometry.attributes.position
+                const base = geometry.attributes.basePosition
+                if (!position || !base) return
+
+                for (let i = 0; i < position.count; i++) {
+                    const bx = base.getX(i)
+                    const by = base.getY(i)
+                    const bz = base.getZ(i)
+                    const ox = getNoiseX(bx, by, time)
+                    const oy = getNoiseY(bx, by, time)
+                    position.setX(i, bx + ox)
+                    position.setY(i, by + oy)
+                    position.setZ(i, bz) // keep original Z (thickness)
+                }
+
+                position.needsUpdate = true
+                geometry.computeVertexNormals()
+            })
+         }
+ 
+         renderer.render(scene, camera)
+     }
 
     // make cell nuclei (like eyes)
     const eyeGeometry = new THREE.CircleGeometry(0.02, 64);
@@ -124,6 +152,8 @@ onMounted(async () => {
                 flatPositions.push(x, y, z)
             }
             polygonGeometry.setAttribute('position', new THREE.Float32BufferAttribute(flatPositions, 3))
+            // save original positions for animation
+            polygonGeometry.setAttribute('basePosition', polygonGeometry.attributes.position.clone())
             polygonGeometry.computeVertexNormals()
 
             const polygonMaterial = new THREE.MeshPhongMaterial({ 
@@ -140,6 +170,7 @@ onMounted(async () => {
                 return new THREE.Vector3(x, y, topZ)
             })
             const lineGeometry3D = new THREE.BufferGeometry().setFromPoints(linePoints3D)
+            lineGeometry3D.setAttribute('basePosition', lineGeometry3D.attributes.position.clone())
             const lineMaterial3D = new THREE.LineBasicMaterial({ color: 0x11491c });
             const line3D = new THREE.Line(lineGeometry3D, lineMaterial3D)
             group.add(line3D);
