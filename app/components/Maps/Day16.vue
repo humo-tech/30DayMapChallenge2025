@@ -41,6 +41,9 @@ onMounted(async () => {
     const group = new THREE.Group()
     scene.add(group)
 
+    // store mapping of eyes to their polygon base centroids & depth
+    const polygonEyes = []
+
     const ambientLight = new THREE.AmbientLight(0xf5f5f5, 2)
     scene.add(ambientLight)
 
@@ -77,6 +80,16 @@ onMounted(async () => {
                 position.needsUpdate = true
                 geometry.computeVertexNormals()
             })
+
+            // update eyes to follow polygons' animated centroid
+            for (let i = 0; i < polygonEyes.length; i++) {
+                const item = polygonEyes[i]
+                const bx = item.base.x
+                const by = item.base.y
+                const ox = getNoiseX(bx, by, time)
+                const oy = getNoiseY(bx, by, time)
+                item.eye.position.set(bx + ox, by + oy, item.depth + 0.002)
+            }
          }
  
          renderer.render(scene, camera)
@@ -186,12 +199,28 @@ onMounted(async () => {
             const polygonSize = outerRingLonLat.length
 
             const eyeClone = eye.clone()
-            eyeClone.position.set(polygonCenterXY[0], polygonCenterXY[1], depth + 0.002)
+            // compute base centroid from the geometry's basePosition (use top-face vertices)
+            let cx = 0, cy = 0, count = 0
+            const basePos = polygonGeometry.attributes.basePosition
+            for (let i = 0; i < basePos.count; i++) {
+                const bz = basePos.getZ(i)
+                if (bz > depth / 2) { // top face vertices
+                    cx += basePos.getX(i)
+                    cy += basePos.getY(i)
+                    count++
+                }
+            }
+            if (count === 0) { cx = polygonCenterXY[0]; cy = polygonCenterXY[1]; }
+            else { cx /= count; cy /= count; }
+
+            eyeClone.position.set(cx, cy, depth + 0.002)
             const size = Math.min(polygonSize * 0.007, 1);
             eyeClone.scale.setScalar(size)
             eyeClone.rotation.z = Math.random()
             scene.add(eyeClone)
 
+            // register for animation updates (store base centroid and depth)
+            polygonEyes.push({ eye: eyeClone, base: new THREE.Vector3(cx, cy, depth), depth: depth })
         })
     })
 
