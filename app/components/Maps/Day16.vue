@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import ClipperLib from 'clipper-lib'
 
 const runtimeConfig = useRuntimeConfig()
 const baseUrl = runtimeConfig.app.baseURL || ''
@@ -48,7 +49,7 @@ onMounted(async () => {
     scene.add(ambientLight)
 
     const sunLight = new THREE.DirectionalLight(0xffffff, 1)
-    sunLight.position.set(5, 3, 5)
+    sunLight.position.set(5, 5, 5)
     scene.add(sunLight)
 
     const animate = function () {
@@ -91,7 +92,7 @@ onMounted(async () => {
                 item.eye.position.set(bx + ox, by + oy, item.depth + 0.002)
             }
          }
- 
+
          renderer.render(scene, camera)
      }
 
@@ -123,9 +124,9 @@ onMounted(async () => {
 
     mapContainer.value.appendChild(renderer.domElement)
     renderer.setSize(window.innerWidth, window.innerHeight)
-    camera.position.y = -1
-    camera.position.z = 1
-    camera.lookAt(new THREE.Vector3(0, 0, 0))
+    camera.position.y = -0.4
+    camera.position.z = 0.8
+    camera.lookAt(new THREE.Vector3(0, 0, 0.2))
 
     const geojson = await loadGeoJSON(`${baseUrl}/data/ne_110m_admin_0_countries.geojson`)
     geojson.features.forEach(feature => {
@@ -188,6 +189,64 @@ onMounted(async () => {
             const line3D = new THREE.Line(lineGeometry3D, lineMaterial3D)
             group.add(line3D);
 
+            // --- add inner "cell wall" ring using clipper-lib for robust inset geometry ---
+            {
+                // clipper requires integer coords -> scale
+                const scale = 1e4
+                const outerPath = linePoints3D.map(p => ({ X: Math.round(p.x * scale), Y: Math.round(p.y * scale) }))
+
+                // decide inset distance (world units), same heuristic as before
+                const bbox = new THREE.Box2()
+                linePoints3D.forEach(p => bbox.expandByPoint(new THREE.Vector2(p.x, p.y)))
+                const size = Math.min(bbox.getSize(new THREE.Vector2()).x, bbox.getSize(new THREE.Vector2()).y)
+                const inset = Math.max(0.001, Math.min(size * 0.06, 0.01))
+
+                const co = new ClipperLib.ClipperOffset()
+                co.AddPath(outerPath, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon)
+                const solution = new ClipperLib.Paths()
+                const delta = -Math.round(inset * scale) // negative -> inset
+                co.Execute(solution, delta)
+
+                let innerLoop2 = null
+                if (solution && solution.length > 0 && solution[0].length >= 3) {
+                    innerLoop2 = solution[0].map(pt => new THREE.Vector2(pt.X / scale, pt.Y / scale))
+                } else {
+                    // fallback: centroid-based inset if clipper fails
+                    const centroid = new THREE.Vector2(0, 0)
+                    linePoints3D.forEach(p => { centroid.x += p.x; centroid.y += p.y })
+                    centroid.x /= linePoints3D.length; centroid.y /= linePoints3D.length
+                    innerLoop2 = linePoints3D.map(p => {
+                        const dir = new THREE.Vector2(centroid.x - p.x, centroid.y - p.y)
+                        const len = dir.length() || 1
+                        return new THREE.Vector2(p.x + (dir.x / len) * Math.min(inset, len * 0.9),
+                                                 p.y + (dir.y / len) * Math.min(inset, len * 0.9))
+                    })
+                }
+
+                // create a Shape with outer and inner hole, then make 2D geometry and lift it to topZ
+                const outer2 = linePoints3D.map(p => new THREE.Vector2(p.x, p.y))
+                const wallShape = new THREE.Shape(outer2)
+                const holePath = new THREE.Path(innerLoop2)
+                wallShape.holes.push(holePath)
+
+                const wallGeo2D = new THREE.ShapeGeometry(wallShape)
+                // lift geometry to the top face and store basePosition for animation
+                const posAttr = wallGeo2D.attributes.position
+                for (let i = 0; i < posAttr.count; i++) {
+                    posAttr.setZ(i, topZ + 0.0002)
+                }
+                wallGeo2D.setAttribute('basePosition', wallGeo2D.attributes.position.clone())
+                wallGeo2D.computeVertexNormals()
+
+                const wallMat = new THREE.MeshPhongMaterial({
+                    color: 0x9DBF8A,
+                    side: THREE.DoubleSide,
+                    shininess: 10,
+                })
+                const wallMesh = new THREE.Mesh(wallGeo2D, wallMat)
+                group.add(wallMesh)
+            }
+
             // put eye marker
             const polygonGravity = outerRingLonLat.reduce((acc, coord) => {
                 acc[0] += coord[0]
@@ -221,6 +280,7 @@ onMounted(async () => {
 
             // register for animation updates (store base centroid and depth)
             polygonEyes.push({ eye: eyeClone, base: new THREE.Vector3(cx, cy, depth), depth: depth })
+
         })
     })
 
