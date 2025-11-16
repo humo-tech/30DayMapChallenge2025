@@ -56,7 +56,8 @@ onMounted(async () => {
 
     mapContainer.value.appendChild(renderer.domElement)
     renderer.setSize(window.innerWidth, window.innerHeight)
-    camera.position.z = 2
+    camera.position.y = -1
+    camera.position.z = 1
     camera.lookAt(new THREE.Vector3(0, 0, 0))
 
     const geojson = await loadGeoJSON(`${baseUrl}/data/ne_110m_admin_0_countries.geojson`)
@@ -76,29 +77,38 @@ onMounted(async () => {
                 }
             }
 
-            const polygonGeometry = new THREE.ShapeGeometry(shape)
+            // Extrude the shape to give thickness
+            const depth = 0.03
+            const extrudeSettings = {
+                depth: depth,
+                bevelEnabled: false,
+                curveSegments: 8,
+                steps: 1
+            }
+            const polygonGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings)
 
+            // Convert geometry's lon/lat (x=lon, y=lat) to projected x,y while keeping z (thickness)
             const positions = polygonGeometry.attributes.position
             const flatPositions = []
-            for(let i = 0; i < positions.count; i++) {
+            for (let i = 0; i < positions.count; i++) {
                 const lon = positions.getX(i)
                 const lat = positions.getY(i)
+                const z = positions.getZ(i) // 0 .. depth
                 const [x, y] = latlon2xy(lat, lon)
-                console.log(x, y)
-                flatPositions.push(x, y, 0.0)
+                flatPositions.push(x, y, z)
             }
             polygonGeometry.setAttribute('position', new THREE.Float32BufferAttribute(flatPositions, 3))
-
             polygonGeometry.computeVertexNormals()
 
-            const polygonMaterial = new THREE.MeshBasicMaterial({ color: 0x7de08f, side: THREE.FrontSide })
+            const polygonMaterial = new THREE.MeshPhongMaterial({ color: 0x7de08f, side: THREE.DoubleSide })
             const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial)
             group.add(polygonMesh);
 
-
+            // top outline (slightly above top face)
+            const topZ = depth + 0.001
             const linePoints3D = outerRingLonLat.map(([lon, lat]) => {
                 const [x, y] = latlon2xy(lat, lon)
-                return new THREE.Vector3(x, y, 0)
+                return new THREE.Vector3(x, y, topZ)
             })
             const lineGeometry3D = new THREE.BufferGeometry().setFromPoints(linePoints3D)
             const lineMaterial3D = new THREE.LineBasicMaterial({ color: 0x11491c });
