@@ -54,6 +54,32 @@ onMounted(async () => {
         renderer.render(scene, camera)
     }
 
+    // make cell nuclei (like eyes)
+    const eyeGeometry = new THREE.CircleGeometry(0.02, 64);
+    // transform eyeGeometry as amebatic shape (BufferGeometry: mutate position attribute)
+    {
+        const pos = eyeGeometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const offset = (Math.sin(i*0.2) + Math.cos(i*0.1)) * 0.001; // Use a sin,cos function for smoother variation
+            const x = pos.getX(i) + offset;
+            const y = pos.getY(i) + offset;
+            pos.setXY(i, x, y);
+        }
+        pos.needsUpdate = true;
+        eyeGeometry.computeVertexNormals();
+    }
+    const eyeMaterial = new THREE.MeshPhongMaterial({ color: 0x9F6811 });
+    const eye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    eye.castShadow = true;
+    eye.receiveShadow = true;
+    const blackSphereGeometry = new THREE.CircleGeometry(0.005, 32);
+    const blackSphereMaterial = new THREE.MeshPhongMaterial({ color: 0x9F9F17 });
+    const blackSphere = new THREE.Mesh(blackSphereGeometry, blackSphereMaterial);
+    blackSphere.position.set(0.002, 0, 0.005);
+    //blackSphere.rotation.x = Math.PI / 2;
+    eye.add(blackSphere);
+
+
     mapContainer.value.appendChild(renderer.domElement)
     renderer.setSize(window.innerWidth, window.innerHeight)
     camera.position.y = -1
@@ -114,6 +140,24 @@ onMounted(async () => {
             const lineMaterial3D = new THREE.LineBasicMaterial({ color: 0x11491c });
             const line3D = new THREE.Line(lineGeometry3D, lineMaterial3D)
             group.add(line3D);
+
+            // put eye marker
+            const polygonGravity = outerRingLonLat.reduce((acc, coord) => {
+                acc[0] += coord[0]
+                acc[1] += coord[1]
+                return acc
+            }, [0,0]).map(v => v / outerRingLonLat.length)
+            const polygonCenterXY = latlon2xy(polygonGravity[1], polygonGravity[0])
+
+            const polygonSize = outerRingLonLat.length
+
+            const eyeClone = eye.clone()
+            eyeClone.position.set(polygonCenterXY[0], polygonCenterXY[1], depth + 0.002)
+            const size = Math.min(polygonSize * 0.007, 1);
+            eyeClone.scale.setScalar(size)
+            eyeClone.rotation.z = Math.random()
+            scene.add(eyeClone)
+
         })
     })
 
