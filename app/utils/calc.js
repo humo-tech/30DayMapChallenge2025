@@ -92,7 +92,7 @@ export function createContinuousPoints(lonLatArray) {
 
             // 180度以上のジャンプは日付変更線をまたいだと判断
             if (Math.abs(diff) > 180) { 
-                runningAdjustment += (diff > 0 ? -360 : 360);
+                //runningAdjustment += (diff > 0 ? -360 : 360);
             }
         }
         points.push([lon + runningAdjustment, lat]);
