@@ -126,7 +126,10 @@ onMounted(async () => {
             polygonGeometry.setAttribute('position', new THREE.Float32BufferAttribute(flatPositions, 3))
             polygonGeometry.computeVertexNormals()
 
-            const polygonMaterial = new THREE.MeshPhongMaterial({ color: 0x7de08f, side: THREE.DoubleSide })
+            const polygonMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xD1E9C0,
+                side: THREE.DoubleSide,
+            })
             const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial)
             group.add(polygonMesh);
 
