@@ -18,6 +18,8 @@
     "@nuxt/ui": "^4.1.0",
     "@turf/great-circle": "^7.2.0",
     "@unhead/vue": "^2.0.19",
+    "babylonjs": "^8.37.0",
+    "babylonjs-loaders": "^8.37.0",
     "better-sqlite3": "^12.4.1",
     "clipper-lib": "^6.4.2",
     "eslint": "^9.39.0",
