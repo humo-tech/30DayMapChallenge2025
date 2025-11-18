@@ -42,16 +42,11 @@ onMounted(async () => {
             uniform sampler2D texture1;
             uniform sampler2D texture2;
             uniform float mixRatio;
-            uniform bool isReverse; // texture1からtexture2へ変化するかどうか
             varying vec2 vUv;
             void main() {
                 vec4 color1 = texture2D(texture1, vUv);
                 vec4 color2 = texture2D(texture2, vUv);
-                if(isReverse) {
-                    gl_FragColor = mix(color2, color1, mixRatio);
-                } else {
-                    gl_FragColor = mix(color1, color2, mixRatio);
-                }
+                gl_FragColor = mix(color1, color2, mixRatio);
             }
         `,
         uniforms: {
@@ -83,15 +78,15 @@ onMounted(async () => {
                 material.uniforms.mixRatio.value += 0.01
             } else {
                 // 切り替え完了後、次のテクスチャに更新
+                // texture2の内容をtexture1にコピー
+                material.uniforms.texture1.value = material.uniforms.texture2.value
+                
+                // 次のテクスチャをtexture2に読み込む
                 currentIndex = (currentIndex + 1) % images.length
+                const nextIndex = (currentIndex + 1) % images.length
                 console.log('update texture ' + currentIndex + ': ' + images[currentIndex].img)
-                if(currentIndex % 2 == 0) {
-                    material.uniforms.ifReverse = { value: false }
-                    material.uniforms.texture1.value = textureLoader.load(`${baseUrl}/images/maps/day18/${images[currentIndex].img}`)
-                } else {
-                    material.uniforms.ifReverse = { value: true }
-                    material.uniforms.texture2.value = textureLoader.load(`${baseUrl}/images/maps/day18/${images[(currentIndex + 1) % images.length].img}`)
-                }
+                material.uniforms.texture2.value = textureLoader.load(`${baseUrl}/images/maps/day18/${images[nextIndex].img}`)
+                
                 material.uniforms.mixRatio.value = 0.0
                 group.rotation.y -= Math.PI * 2
             }   
